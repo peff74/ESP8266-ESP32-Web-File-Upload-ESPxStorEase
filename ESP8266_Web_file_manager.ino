@@ -1,7 +1,6 @@
-//IDE 2.3.4 - - esp32 3.1.1
-#include <WiFi.h>
+//IDE 2.3.4 - - esp8266 3.1.2
 #include <LittleFS.h>
-#include <WebServer.h>
+#include <ESP8266WebServer.h>
 #include <time.h>
 
 //=======Defines
@@ -9,7 +8,7 @@
 #define WIFI_PASSWORD "Password1"
 
 //=======SETTINGS
-WebServer server(80);
+ESP8266WebServer server(80);
 
 /*
     Webserver Initialization
@@ -84,14 +83,16 @@ void fileserverSetup() {
 // Handle file system root directory listing
 void handleFileList() {
   String files;
-  File root = LittleFS.open("/");
-  File file = root.openNextFile();
+  Dir dir = LittleFS.openDir("/");
 
   // Generate HTML list of files with metadata
-  while (file) {
+  while (dir.next()) {
+    File file = dir.openFile("r");
+
     char buffer1[20];
     size_t sizeofFile = file.size();
     formatBytes(sizeofFile, buffer1, sizeof(buffer1));
+
     files += "<div class='file-container'>";
     files += "<span class='filename'>" + String(file.name()) + "</span>";
     files += "<span class='file-size'>" + String(buffer1) + "</span>";
@@ -100,7 +101,7 @@ void handleFileList() {
     files += "<a href='/delete?file=/" + String(file.name()) + "'>Delete</a>";
     files += "<a href='/view?file=" + String(file.name()) + "'>View</a>";
     files += "</span></div>";
-    file = root.openNextFile();
+    file.close();
   }
 
   // Build complete filesystem management interface
@@ -143,7 +144,7 @@ void handleFileUpload() {
 
 
   if (upload.status == UPLOAD_FILE_START) {
-      // Create new file in write mode
+    // Create new file in write mode
     String filename = "/" + upload.filename;
     Serial.println("Upload started: " + filename);
     file = LittleFS.open(filename, "w");
@@ -173,7 +174,6 @@ void handleFileUpload() {
       Serial.println(F("Upload finished, but file was not open"));
     }
   }
-  
 }
 
 // Handle file deletion requests
@@ -188,11 +188,13 @@ void handleFileDelete() {
   sendResponce();
 }
 
+
 // Display file contents in web interface
 void handleFileView() {
   String filename = server.arg("file");
   Serial.println("View: " + filename);
- 
+
+
   if (!filename.startsWith("/")) {
     filename = "/" + filename;
   }
@@ -218,11 +220,11 @@ void handleFormat() {
   sendResponce();  // Redirect back to file list
 }
 
-// Utility function to redirect to filesystem browser
 void sendResponce() {
   server.sendHeader("Location", "/fs");
   server.send(303, "message/http");
 }
+
 
 /*
     File System Helper Functions
@@ -261,7 +263,7 @@ void setup() {
   }
   Serial.println("\nConnected! IP-Adresse: " + WiFi.localIP().toString());
   serverSetup();
-  fileserverSetup();  // Initialize file management routes
+  fileserverSetup();
   // Configure NTP for file timestamps
   configTime(0, 0, "pool.ntp.org");  // UTC time
 }
