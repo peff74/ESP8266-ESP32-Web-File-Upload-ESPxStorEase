@@ -1,4 +1,4 @@
-# ESPxStorEase
+# ESP8266 ESP32 Web File Upload sketch
 Some little Arduino scripts with a simple Web File Manager for your ESP8266/ESP32 LittleFS files
 
 ![ESP Boards](https://img.shields.io/badge/Supports-ESP32%20%7C%20ESP8266-green) 
